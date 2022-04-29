@@ -19,6 +19,7 @@ public class Pipeline extends OpenCvPipeline {
 
     Mat mat = new Mat();
     Mat output = new Mat();
+    Mat leftSub, middleSub, rightSub = new Mat();
     //creates 2 rectangles
     Rect upperROI = new Rect(new Point(0,0), new Point(1,1));
     Rect lowerROI;
@@ -43,6 +44,9 @@ public class Pipeline extends OpenCvPipeline {
         telemetry = t;
 
     }
+    public enum Location{
+        LEFT,MIDDLE,RIGHT
+    }
 
     @Override
     public Mat processFrame(Mat input) {
@@ -50,7 +54,8 @@ public class Pipeline extends OpenCvPipeline {
         Imgproc.cvtColor(input, mat, Imgproc.COLOR_RGBA2RGB);
         output = input;
         Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2HSV);
-
+        Imgproc.line(output,new Point(175/3.0,0), new Point(175/3.0,300), red);
+        Imgproc.line(output,new Point(175/3.0 * 2.0,0), new Point(175/3.0 * 2.0,300), red);
         Core.inRange(mat, lowHSV, highHSV, mat);
 
         List<MatOfPoint> countersList = new ArrayList<>();
@@ -68,8 +73,38 @@ public class Pipeline extends OpenCvPipeline {
 
         }
 
-        Imgproc.rectangle(output, theRealDucky, red);
+        Imgproc.rectangle(output, theRealDucky, green);
+        //x and y are top left coords
+        Point leftTopPoint = new Point(theRealDucky.x,theRealDucky.y);
+        Point rightTopPoint = new Point(theRealDucky.x + theRealDucky.width,theRealDucky.y);
+        Location location;
 
+        //left rectangle is from 0 to 175/3
+        double areaLeft = Math.max(0,Math.min(175/3.0 - leftTopPoint.x, 175/3.0))* theRealDucky.height;
+        double areaMiddle = Math.max(0,Math.min(2*175/3.0 - leftTopPoint.x, 175/3.0))* theRealDucky.height;
+        double areaRight = Math.max(0,rightTopPoint.x - 2*175/3.0)* theRealDucky.height;
+
+        if(areaLeft >= areaMiddle && areaLeft >= areaRight){
+            location = Location.LEFT;
+        }else if(areaMiddle >= areaRight && areaMiddle >= areaLeft){
+            location = Location.RIGHT;
+        }else{
+            location = Location.MIDDLE;
+        }
+        telemetry.addData("left area: ",areaLeft);
+        telemetry.addData("middle area: ", areaMiddle);
+        telemetry.addData("right area: ", areaRight);
+        switch(location){
+            case LEFT:
+                telemetry.addData("Location: ", "left");
+                break;
+            case RIGHT:
+                telemetry.addData("Location: ", "right");
+                break;
+            case MIDDLE:
+                telemetry.addData("Location: ", "middle");
+                break;
+        }
         telemetry.update();
         return output;
 
