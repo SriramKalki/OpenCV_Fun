@@ -72,7 +72,7 @@ public class Pipeline extends OpenCvPipeline {
             }
 
         }
-
+//
         Imgproc.rectangle(output, theRealDucky, green);
         //x and y are top left coords
         Point leftTopPoint = new Point(theRealDucky.x,theRealDucky.y);
