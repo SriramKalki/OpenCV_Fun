@@ -74,26 +74,28 @@ public class Pipeline extends OpenCvPipeline {
         }
 //
         Imgproc.rectangle(output, theRealDucky, green);
-        //x and y are top left coords
-        Point leftTopPoint = new Point(theRealDucky.x,theRealDucky.y);
-        Point rightTopPoint = new Point(theRealDucky.x + theRealDucky.width,theRealDucky.y);
-        Location location;
-
-        //left rectangle is from 0 to 175/3
-        double areaLeft = Math.max(0,Math.min(175/3.0 - leftTopPoint.x, 175/3.0))* theRealDucky.height;
-        double areaMiddle = Math.max(0,Math.min(2*175/3.0 - leftTopPoint.x, 175/3.0))* theRealDucky.height;
-        double areaRight = Math.max(0,rightTopPoint.x - 2*175/3.0)* theRealDucky.height;
-
-        if(areaLeft >= areaMiddle && areaLeft >= areaRight){
-            location = Location.LEFT;
-        }else if(areaMiddle >= areaRight && areaMiddle >= areaLeft){
-            location = Location.RIGHT;
-        }else{
-            location = Location.MIDDLE;
+        if(theRealDucky.area() <= 100){
+            return output;
         }
-        telemetry.addData("left area: ",areaLeft);
-        telemetry.addData("middle area: ", areaMiddle);
-        telemetry.addData("right area: ", areaRight);
+        Location location = Location.LEFT;
+
+        int leftPoint = theRealDucky.x; int rightPoint = theRealDucky.x + theRealDucky.width;
+
+        double leftRectSegment = Math.min(Math.max(0,Math.min(theRealDucky.width, (175/3.0 - leftPoint))),175/3.0);
+        double midRectSegment = Math.min(Math.max(0,Math.min(theRealDucky.width, (350/3.0 - leftPoint))),175/3.0);
+        double rightRectSegment = Math.min(Math.max(0,Math.min(theRealDucky.width, (175 - leftPoint))),175/3.0);
+        String text = "";
+        if(leftRectSegment >= midRectSegment && leftRectSegment >= rightRectSegment){
+            location = Location.LEFT;
+            text = "TSE LEFT";
+        }else if(midRectSegment >= leftRectSegment && midRectSegment >= rightRectSegment){
+            location = Location.MIDDLE;
+            text = "TSE MIDDLE";
+        }else{
+            location = Location.RIGHT;
+            text = "TSE RIGHT";
+        }
+
         switch(location){
             case LEFT:
                 telemetry.addData("Location: ", "left");
@@ -105,6 +107,8 @@ public class Pipeline extends OpenCvPipeline {
                 telemetry.addData("Location: ", "middle");
                 break;
         }
+        Imgproc.putText(output,text,new Point(theRealDucky.x - 40, theRealDucky.y),1,1,green);
+
         telemetry.update();
         return output;
 
