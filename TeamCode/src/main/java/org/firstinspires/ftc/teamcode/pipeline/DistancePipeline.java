@@ -27,12 +27,14 @@ public class DistancePipeline extends OpenCvPipeline {
     //For camera stream coloring purposes
     final Scalar green = new Scalar(0, 255, 0);
     final Scalar red = new Scalar(255, 0, 0);
+    final Scalar blue = new Scalar(0, 0, 255);
 
     Scalar lowHSV = new Scalar(23, 50, 70);
     Scalar highHSV = new Scalar(32, 255, 255);
 
     final double INCHES_PER_PIXEL_Y = Math.sqrt(436)/240.0;
-    final double WEBCAM_ANGLE = 73.301;
+    final double WEBCAM_ANGLE_X = 41.186 * 2;
+    final double WEBCAM_ANGLE_Y = 73.301;
     //Telemetry
     Telemetry telemetry;
 
@@ -70,8 +72,10 @@ public class DistancePipeline extends OpenCvPipeline {
             }
 
         }
-        String text = "filler";
-        Imgproc.rectangle(output, theRealDucky, green);
+        String forward = "";
+        String strafe = "";
+        String bearing = "";
+        Imgproc.rectangle(output, theRealDucky, new Scalar(0,0,0));
         if(theRealDucky.area() <= 100){
             return output;
         }
@@ -81,11 +85,22 @@ public class DistancePipeline extends OpenCvPipeline {
 
         //midpoint.y * sqrt{436}/240 gives us the straight line distance from the webcam to object
         double straightLineDistanceY = INCHES_PER_PIXEL_Y * (240- midpoint.y);
-        double horizontalDistanceY = straightLineDistanceY * Math.sin(Math.toRadians(WEBCAM_ANGLE));
+        double horizontalDistanceY = straightLineDistanceY * Math.sin(Math.toRadians(WEBCAM_ANGLE_Y)) - 3.2;
 
-        text = Math.round(horizontalDistanceY) + " inches";
-        Imgproc.putText(output,text,new Point(theRealDucky.x - 60, theRealDucky.y),1,0.8,green);
+        forward = Math.round(horizontalDistanceY) + " inches forward";
+        Imgproc.putText(output,forward,new Point(theRealDucky.x - 60, theRealDucky.y),1,0.8,green);
         telemetry.addData("Distance Y: ", horizontalDistanceY);
+
+        //reference: 8 in horDistance when 14 is the width
+        double horizontalDistanceX = 2 * (0.5* mat.width() - midpoint.x) * horizontalDistanceY * Math.tan(WEBCAM_ANGLE_X) / mat.width();
+        strafe = Math.round(horizontalDistanceX) + " inches right ";
+        Imgproc.putText(output,strafe,midpoint,1,0.8,red);
+        telemetry.addData("Distance X: ", horizontalDistanceX);
+
+        double angle = Math.toDegrees(Math.atan(horizontalDistanceX/horizontalDistanceY));
+        bearing = Math.round(angle) + " bearing (degrees)";
+        Imgproc.putText(output,bearing,new Point((theRealDucky.x+ theRealDucky.width),(theRealDucky.y+ theRealDucky.height)),1,0.8,blue);
+        telemetry.addData("Estimated Turn: ", angle);
 
         telemetry.update();
         return output;
